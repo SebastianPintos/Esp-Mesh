@@ -13,7 +13,7 @@ extern "C" {
 #include "./structures.h"
 
 #define MAX_APS_TRACKED 10
-#define MAX_CLIENTS_TRACKED 70
+#define MAX_CLIENTS_TRACKED 30
 #define VERBOSE true                                      //Treats every CLIENT as not KNOWN, ideal for triangulation
 #define DEVICEONLY false                                 //Only Tracks devices, ignores APs      
            
@@ -66,7 +66,7 @@ int register_beacon(beaconinfo beacon)
       }   // AP known => Set known flag
     }
   
-  if (! known && (beacon.err == 0))  // AP is NEW, copy MAC to array and return it
+  if (! known && (beacon.err == 0))  // AP is NEW, copy MAC to array and return itCLIENT:
   {
     beacon.lastDiscoveredTime = millis();
     memcpy(&aps_known[aps_known_count], &beacon, sizeof(beacon));
@@ -128,9 +128,6 @@ int register_client(clientinfo &ci) {
 
     if (exceededMaxClients()) {
       Serial.printf("exceeded max clients_known\n");
-       if(VERBOSE == false){
-      clients_known_count = 0;
-       }
     }
   }
   return known;
@@ -142,7 +139,7 @@ String print_beacon(beaconinfo beacon)
 {
   String hi = "";
   if (beacon.err != 0) {
-    //Serial.printf("BEACON ERR: (%d)  ", beacon.err);
+    Serial.printf("BEACON ERR: (%d)  ", beacon.err);
   } else {
     Serial.printf(" BEACON: <=============== [%32s]  ", beacon.ssid);
     Serial.print(formatMac1(beacon.bssid));
@@ -161,35 +158,11 @@ String print_client(clientinfo ci)
     // nothing
   } else {
   if(ci.channel == -2) {
-        Serial.printf("RANDOM CLIENT:l ");
+       Serial.printf("RANDOM CLIENT:l ");
           }
     else{
     Serial.printf("CLIENT: ");
     }
-    Serial.print(formatMac1(ci.station));  //Mac of device
-    Serial.printf(" ==> ");
-
-//    for (u = 0; u < aps_known_count; u++)
-//    {
-//      if (! memcmp(aps_known[u].bssid, ci.bssid, ETH_MAC_LEN)) {
-//        //       Serial.print("   ");
-//        //        Serial.printf("[%32s]", aps_known[u].ssid);   // Name of connected AP
-//        known = 1;     // AP known => Set known flag
-//        break;
-//      }
-//    }
-//
-//    if (! known)  {
-//      Serial.printf("   Unknown/Malformed packet \r\n");
-//      for (int i = 0; i < 6; i++) Serial.printf("%02x", ci.bssid[i]);
-//    } else {
-//      //    Serial.printf("%2s", " ");
-      
-      Serial.print(formatMac1(ci.ap));   // Mac of connected AP
-      Serial.printf("  % 3d", ci.channel);  //used channel
-      Serial.printf("   % 4d\r\n", ci.rssi);
-
-
 
   }
   return hi;
@@ -210,7 +183,7 @@ void promisc_cb(uint8_t *buf, uint16_t len)
       if(DEVICEONLY == false){
         struct beaconinfo beacon = parse_beacon(sniffer->buf, 112, sniffer->rx_ctrl.rssi);
         if (register_beacon(beacon) == 0) {
-          print_beacon(beacon);
+          //print_beacon(beacon);
           nothing_new = 0;
         }
       }
@@ -218,7 +191,7 @@ void promisc_cb(uint8_t *buf, uint16_t len)
       struct clientinfo ci = parse_probe(sniffer->buf, 36, sniffer->rx_ctrl.rssi);
       //if (memcmp(ci.bssid, ci.station, ETH_MAC_LEN)) {
         if (register_client(ci) == 0) {
-          print_client(ci);
+          //print_client(ci);
           nothing_new = 0;
         }
       //}
@@ -230,7 +203,7 @@ void promisc_cb(uint8_t *buf, uint16_t len)
       struct clientinfo ci = parse_data(sniffer->buf, 36, sniffer->rx_ctrl.rssi, sniffer->rx_ctrl.channel);
       if (memcmp(ci.bssid, ci.station, ETH_MAC_LEN)) {
         if (register_client(ci) == 0) {
-          print_client(ci);
+          //print_client(ci);
           nothing_new = 0;
         }
       }
