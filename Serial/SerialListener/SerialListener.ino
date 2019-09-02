@@ -4,7 +4,7 @@ String incoming = "";
 String toSend = "";
 int incomingByte = 0;    // for incoming serial data
 void setup() {
-  Serial.begin(230400);
+  Serial.begin(115200);
 
 }
 
@@ -27,6 +27,7 @@ void serialListener() {
     incomingByte = Serial.read();
     // say what you got:
     char a = (char) incomingByte;
+    Serial.print(a);
     if (a == '#') { //message start
       isRecieving = true;
       incoming = "";

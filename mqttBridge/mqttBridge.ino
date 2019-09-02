@@ -4,7 +4,7 @@
 // To send a message to a mesh node, you can publish it to "painlessMesh/to/12345678" where 12345678 equals the nodeId.
 // To broadcast a message to all nodes in the mesh you can publish it to "painlessMesh/to/broadcast".
 // When you publish "getNodes" to "painlessMesh/to/gateway" you receive the mesh topology as JSON
-// Every message from the mesh which is send to the gateway node will be published to "painlessMesh/from/12345678" where 12345678
+// Every message from the mesh which is send to the gateway node will be published to "painlessMesh/from/12345678" where 12345678 
 // is the nodeId from which the packet was send.
 //************************************************************
 
@@ -17,8 +17,8 @@
 #define   MESH_PASSWORD   "somethingSneaky"
 #define   MESH_PORT       5555
 
-#define   STATION_SSID     "6fef23"
-#define   STATION_PASSWORD "268096799"
+#define   STATION_SSID     "SSID"
+#define   STATION_PASSWORD "PASSWORD"
 
 #define HOSTNAME "MQTT_Bridge"
 
@@ -28,8 +28,8 @@ void mqttCallback(char* topic, byte* payload, unsigned int length);
 
 IPAddress getlocalIP();
 
-IPAddress myIP(192, 168, 43, 140);
-IPAddress mqttBroker(192, 168, 43, 130);
+IPAddress myIP(0,0,0,0);
+IPAddress mqttBroker(192, 168, 1, 1);
 
 painlessMesh  mesh;
 WiFiClient wifiClient;
@@ -47,58 +47,62 @@ void setup() {
 
   mesh.stationManual(STATION_SSID, STATION_PASSWORD);
   mesh.setHostname(HOSTNAME);
+
+  // Bridge node, should (in most cases) be a root node. See [the wiki](https://gitlab.com/painlessMesh/painlessMesh/wikis/Possible-challenges-in-mesh-formation) for some background
+  mesh.setRoot(true);
+  // This node and all other nodes should ideally know the mesh contains a root, so call this on all nodes
+  mesh.setContainsRoot(true);
 }
 
 void loop() {
   mesh.update();
   mqttClient.loop();
 
-  if (myIP != getlocalIP()) {
+  if(myIP != getlocalIP()){
     myIP = getlocalIP();
     Serial.println("My IP is " + myIP.toString());
 
     if (mqttClient.connect("painlessMeshClient")) {
-      mqttClient.publish("painlessMesh/from/gateway", "Ready!");
+      mqttClient.publish("painlessMesh/from/gateway","Ready!");
       mqttClient.subscribe("painlessMesh/to/#");
-    }
+    } 
   }
 }
 
 void receivedCallback( const uint32_t &from, const String &msg ) {
   Serial.printf("bridge: Received from %u msg=%s\n", from, msg.c_str());
   String topic = "painlessMesh/from/" + String(from);
-  mqttClient.publish("painlessMesh/from/gateway", msg.c_str());
-  //mqttClient.publish(topic.c_str(), msg.c_str());
+  mqttClient.publish(topic.c_str(), msg.c_str());
 }
 
 void mqttCallback(char* topic, uint8_t* payload, unsigned int length) {
-  char* cleanPayload = (char*)malloc(length + 1);
+  char* cleanPayload = (char*)malloc(length+1);
   payload[length] = '\0';
-  memcpy(cleanPayload, payload, length + 1);
+  memcpy(cleanPayload, payload, length+1);
   String msg = String(cleanPayload);
   free(cleanPayload);
 
   String targetStr = String(topic).substring(16);
 
-  if (targetStr == "gateway")
+  if(targetStr == "gateway")
   {
-    if (msg == "getNodes")
+    if(msg == "getNodes")
     {
       auto nodes = mesh.getNodeList(true);
       String str;
-      for (auto && id : nodes)
+      for (auto &&id : nodes)
         str += String(id) + String(" ");
       mqttClient.publish("painlessMesh/from/gateway", str.c_str());
     }
   }
-  else if (targetStr == "broadcast")
+  else if(targetStr == "broadcast") 
   {
     mesh.sendBroadcast(msg);
   }
   else
   {
     uint32_t target = strtoul(targetStr.c_str(), NULL, 10);
-    if (mesh.isConnected(target))
+    if(mesh.isConnected(target))
     {
       mesh.sendSingle(target, msg);
     }
