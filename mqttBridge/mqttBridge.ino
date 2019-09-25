@@ -38,7 +38,7 @@ PubSubClient mqttClient(mqttBroker, 1883, mqttCallback, wifiClient);
 void setup() {
   Serial.begin(115200);
 
-  mesh.setDebugMsgTypes( ERROR | STARTUP | CONNECTION );  // set before init() so that you can see startup messages
+  mesh.setDebugMsgTypes( ERROR | MESH_STATUS | CONNECTION | SYNC | COMMUNICATION | MSG_TYPES | REMOTE  );  // set before init() so that you can see startup messages
 
   // Channel set to 6. Make sure to use the same channel for your mesh and for you other
   // network (STATION_SSID)

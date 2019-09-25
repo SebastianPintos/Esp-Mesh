@@ -1,4 +1,4 @@
-//************************************************************
+/./..//************************************************************
 // this is a simple example that uses the painlessMesh library
 //
 // 1. sends a silly message to every node on the mesh at a random time between 1 and 5 seconds
@@ -25,14 +25,14 @@ void sendMessage() ; // Prototype so PlatformIO doesn't complain
 void serialListener();
 
 Task taskSendMessage( TASK_SECOND * 0.3 , TASK_FOREVER, &sendMessage );
-Task taskSerialListen(TASK_SECOND*0.1, TASK_FOREVER, &serialListener);
+//Task taskSerialListen(TASK_SECOND*0.1, TASK_FOREVER, &serialListener);
 
 void serialListener() {
   if ((Serial.available() > 0)&&!hasToSend) {
 
     // read the incoming byte:
     incomingByte = Serial.read();
-    // say what you got:
+    // say what you got:s
     char a = (char) incomingByte;
    // Serial.print(a);
     if (a == '#') { //message start
@@ -55,14 +55,13 @@ void serialListener() {
 }
 void sendMessage() {
   if(hasToSend){
-    mesh.sendBroadcast(toSend);
-    mesh.sendBroadcast("Sent!");
+    mesh.sendBroadcast("Message From Sniffer:"+toSend);
+    //mesh.sendBroadcast("Sent!");
     //Serial.println("tosend: "+toSend);
     hasToSend = false;
     toSend = "";
   }
-  else{
-     mesh.sendBroadcast("Not Sent!");}
+ 
   
   
   
@@ -87,11 +86,22 @@ void nodeTimeAdjustedCallback(int32_t offset) {
 }
 
 void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(500);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(500);
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(500);
+  digitalWrite(LED_BUILTIN, LOW);
+  
   Serial.begin(115200);
+  
 
-//mesh.setDebugMsgTypes( ERROR | MESH_STATUS | CONNECTION | SYNC | COMMUNICATION | GENERAL | MSG_TYPES | REMOTE ); // all types on
-  mesh.setDebugMsgTypes( ERROR | STARTUP );  // set before init() so that you can see startup messages
-
+  //mesh.setDebugMsgTypes( ERROR | MESH_STATUS | CONNECTION | SYNC | COMMUNICATION | GENERAL | MSG_TYPES | REMOTE ); // all types on
+  mesh.setDebugMsgTypes( ERROR | MESH_STATUS | CONNECTION | SYNC | COMMUNICATION | MSG_TYPES | REMOTE ); // all types on
+  //mesh.setDebugMsgTypes( ERROR | STARTUP );  // set before init() so that you can see startup messages
   mesh.init( MESH_PREFIX, MESH_PASSWORD, &userScheduler, MESH_PORT );
   mesh.onReceive(&receivedCallback);
   mesh.onNewConnection(&newConnectionCallback);
@@ -99,13 +109,20 @@ void setup() {
   mesh.onNodeTimeAdjusted(&nodeTimeAdjustedCallback);
 
   userScheduler.addTask( taskSendMessage );
-  userScheduler.addTask( taskSerialListen );
+  //userScheduler.addTask( taskSerialListen );
   //taskSerialListen.enable();
   taskSendMessage.enable();
 }
 
 void loop() {
   // it will run the user scheduler as well
-  serialListener();
-  mesh.update();
+  if(hasToSend){
+    digitalWrite(LED_BUILTIN, LOW);   // turn the LED on (HIGH is the voltage level)                
+    }
+  else{
+    digitalWrite(LED_BUILTIN, HIGH);
+    }
+    
+    serialListener();
+    mesh.update();
 }
