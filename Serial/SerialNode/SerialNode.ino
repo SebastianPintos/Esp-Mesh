@@ -1,4 +1,4 @@
-/./..//************************************************************
+//************************************************************
 // this is a simple example that uses the painlessMesh library
 //
 // 1. sends a silly message to every node on the mesh at a random time between 1 and 5 seconds
@@ -23,12 +23,22 @@ int incomingByte = 0;    // for incoming serial data
 // User stub
 void sendMessage() ; // Prototype so PlatformIO doesn't complain
 void serialListener();
+void tryReceiving();
+
 
 Task taskSendMessage( TASK_SECOND * 0.3 , TASK_FOREVER, &sendMessage );
-//Task taskSerialListen(TASK_SECOND*0.1, TASK_FOREVER, &serialListener);
+Task taskSerialListen(TASK_SECOND*0.1, TASK_FOREVER, &tryReceiving);
+
+void tryReceiving(){
+  if(analogRead(2)==HIGH)serialListener();
+   
+ 
+}
+
 
 void serialListener() {
-  if ((Serial.available() > 0)&&!hasToSend) {
+  
+  while ((Serial.available() > 0)&&!hasToSend) {
 
     // read the incoming byte:
     incomingByte = Serial.read();
@@ -87,6 +97,7 @@ void nodeTimeAdjustedCallback(int32_t offset) {
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(2,INPUT);
   digitalWrite(LED_BUILTIN, LOW);
   digitalWrite(LED_BUILTIN, HIGH);
   delay(500);
@@ -109,8 +120,8 @@ void setup() {
   mesh.onNodeTimeAdjusted(&nodeTimeAdjustedCallback);
 
   userScheduler.addTask( taskSendMessage );
-  //userScheduler.addTask( taskSerialListen );
-  //taskSerialListen.enable();
+  userScheduler.addTask( taskSerialListen );
+  taskSerialListen.enable();
   taskSendMessage.enable();
 }
 
