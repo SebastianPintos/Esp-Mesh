@@ -33,9 +33,10 @@ Task taskSerialListen(TASK_SECOND*1, TASK_FOREVER, &tryReceiving);
 
 void tryReceiving(){
  // Serial.println("NODE: Sending Interrupt To Sniffer");
+  digitalWrite(CLEARTORECIEVEPIN,LOW);
   digitalWrite(CLEARTORECIEVEPIN,HIGH);
   serialListener();
-  digitalWrite(CLEARTORECIEVEPIN,LOW);
+
 
 }
 
