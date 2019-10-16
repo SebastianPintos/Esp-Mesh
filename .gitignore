@@ -1,4 +1,18 @@
+# Created by https://www.gitignore.io/api/code,platformio
+# Edit at https://www.gitignore.io/?templates=code,platformio
 
-.vscode/arduino.json
+### Code ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
-.vscode/c_cpp_properties.json
+### PlatformIO ###
+.pioenvs
+.piolibdeps
+.clang_complete
+.gcc-flags.json
+.pio
+
+# End of https://www.gitignore.io/api/code,platformio
