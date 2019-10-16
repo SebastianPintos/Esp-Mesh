@@ -16,3 +16,4 @@
 .pio
 
 # End of https://www.gitignore.io/api/code,platformio
+Serial/SerialNode/.vscode/

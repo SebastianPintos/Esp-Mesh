@@ -11,6 +11,8 @@
 #define   MESH_PREFIX     "whateverYouLike"
 #define   MESH_PASSWORD   "somethingSneaky"
 #define   MESH_PORT       5555
+#define   CLEARTORECIEVEPIN 0
+#define   SETCONFIGMODEPIN 2
 
 Scheduler userScheduler; // to control your personal task
 painlessMesh  mesh;
@@ -27,12 +29,14 @@ void tryReceiving();
 
 
 Task taskSendMessage( TASK_SECOND * 0.3 , TASK_FOREVER, &sendMessage );
-Task taskSerialListen(TASK_SECOND*0.1, TASK_FOREVER, &tryReceiving);
+Task taskSerialListen(TASK_SECOND*1, TASK_FOREVER, &tryReceiving);
 
 void tryReceiving(){
-  if(analogRead(2)==HIGH)serialListener();
-   
- 
+ // Serial.println("NODE: Sending Interrupt To Sniffer");
+  digitalWrite(CLEARTORECIEVEPIN,HIGH);
+  serialListener();
+  digitalWrite(CLEARTORECIEVEPIN,LOW);
+
 }
 
 
@@ -97,7 +101,8 @@ void nodeTimeAdjustedCallback(int32_t offset) {
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(2,INPUT);
+  pinMode(CLEARTORECIEVEPIN,OUTPUT);
+  pinMode(SETCONFIGMODEPIN,OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
   digitalWrite(LED_BUILTIN, HIGH);
   delay(500);
@@ -106,6 +111,8 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH);
   delay(500);
   digitalWrite(LED_BUILTIN, LOW);
+  delay(500);
+  digitalWrite(LED_BUILTIN, HIGH);
   
   Serial.begin(115200);
   
@@ -126,6 +133,7 @@ void setup() {
 }
 
 void loop() {
+
   // it will run the user scheduler as well
   if(hasToSend){
     digitalWrite(LED_BUILTIN, LOW);   // turn the LED on (HIGH is the voltage level)                
@@ -133,7 +141,6 @@ void loop() {
   else{
     digitalWrite(LED_BUILTIN, HIGH);
     }
-    
-    serialListener();
+  
     mesh.update();
 }
