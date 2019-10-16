@@ -11,7 +11,7 @@
 #define   MESH_PREFIX     "whateverYouLike"
 #define   MESH_PASSWORD   "somethingSneaky"
 #define   MESH_PORT       5555
-#define   CLEARTORECIEVEPIN 0
+#define   CLEARTORECIEVEPIN D8
 #define   SETCONFIGMODEPIN 2
 
 Scheduler userScheduler; // to control your personal task
@@ -28,13 +28,14 @@ void serialListener();
 void tryReceiving();
 
 
-Task taskSendMessage( TASK_SECOND * 0.3 , TASK_FOREVER, &sendMessage );
+Task taskSendMessage( TASK_SECOND * 1 , TASK_FOREVER, &sendMessage );
 Task taskSerialListen(TASK_SECOND*1, TASK_FOREVER, &tryReceiving);
 
 void tryReceiving(){
- // Serial.println("NODE: Sending Interrupt To Sniffer");
-  digitalWrite(CLEARTORECIEVEPIN,LOW);
+  //Serial.println("NODE: Sending Interrupt To Sniffer");
   digitalWrite(CLEARTORECIEVEPIN,HIGH);
+  digitalWrite(CLEARTORECIEVEPIN,LOW);
+  delayMicroseconds(20000);
   serialListener();
 
 
@@ -57,9 +58,8 @@ void serialListener() {
     else if (isRecieving) {
       if (a == '$') { //message end
         isRecieving = false;
+        toSend = incoming;
         hasToSend = true;
-        toSend = "";
-        toSend += incoming;
       }
       else {
         incoming += a;
@@ -73,8 +73,8 @@ void sendMessage() {
     mesh.sendBroadcast("Message From Sniffer:"+toSend);
     //mesh.sendBroadcast("Sent!");
     //Serial.println("tosend: "+toSend);
-    hasToSend = false;
     toSend = "";
+    hasToSend = false;
   }
  
   
@@ -85,26 +85,28 @@ void sendMessage() {
 
 // Needed for painless library
 void receivedCallback( uint32_t from, String &msg ) {
-  Serial.printf("startHere: Received from %u msg=%s\n", from, msg.c_str());
+  //Serial.printf("startHere: Received from %u msg=%s\n", from, msg.c_str());
 }
 
 void newConnectionCallback(uint32_t nodeId) {
-    Serial.printf("--> startHere: New Connection, nodeId = %u\n", nodeId);
+    //Serial.printf("--> startHere: New Connection, nodeId = %u\n", nodeId);
 }
 
 void changedConnectionCallback() {
-  Serial.printf("Changed connections\n");
+  //Serial.printf("Changed connections\n");
 }
 
 void nodeTimeAdjustedCallback(int32_t offset) {
-    Serial.printf("Adjusted time %u. Offset = %d\n", mesh.getNodeTime(),offset);
+    //Serial.printf("Adjusted time %u. Offset = %d\n", mesh.getNodeTime(),offset);
 }
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(CLEARTORECIEVEPIN,OUTPUT);
-  pinMode(SETCONFIGMODEPIN,OUTPUT);
+  //pinMode(SETCONFIGMODEPIN,OUTPUT);
+  digitalWrite(CLEARTORECIEVEPIN,HIGH);
   digitalWrite(LED_BUILTIN, LOW);
+  delay(500);
   digitalWrite(LED_BUILTIN, HIGH);
   delay(500);
   digitalWrite(LED_BUILTIN, LOW);
@@ -126,11 +128,11 @@ void setup() {
   mesh.onNewConnection(&newConnectionCallback);
   mesh.onChangedConnections(&changedConnectionCallback);
   mesh.onNodeTimeAdjusted(&nodeTimeAdjustedCallback);
-
   userScheduler.addTask( taskSendMessage );
+  taskSendMessage.enable();
+
   userScheduler.addTask( taskSerialListen );
   taskSerialListen.enable();
-  taskSendMessage.enable();
 }
 
 void loop() {
