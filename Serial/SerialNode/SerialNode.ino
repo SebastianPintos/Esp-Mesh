@@ -12,7 +12,7 @@
 #define   MESH_PASSWORD   "somethingSneaky"
 #define   MESH_PORT       5555
 #define   CLEARTORECIEVEPIN D8
-#define   SETCONFIGMODEPIN 2
+#define   SETCONFIGMODEPIN D2
 
 Scheduler userScheduler; // to control your personal task
 painlessMesh  mesh;
@@ -21,7 +21,7 @@ boolean hasToSend = false;
 String incoming = "";
 String toSend = "";
 int incomingByte = 0;    // for incoming serial data
-
+const size_t capacity = JSON_OBJECT_SIZE(1);
 // User stub
 void sendMessage() ; // Prototype so PlatformIO doesn't complain
 void serialListener();
@@ -29,18 +29,27 @@ void tryReceiving();
 
 
 Task taskSendMessage( TASK_SECOND * 1 , TASK_FOREVER, &sendMessage );
-Task taskSerialListen(TASK_SECOND*1, TASK_FOREVER, &tryReceiving);
+Task taskSerialListen(TASK_SECOND * 1 , TASK_FOREVER, &tryReceiving );
 
 void tryReceiving(){
-  //Serial.println("NODE: Sending Interrupt To Sniffer");
   digitalWrite(CLEARTORECIEVEPIN,HIGH);
   digitalWrite(CLEARTORECIEVEPIN,LOW);
   delayMicroseconds(20000);
   serialListener();
-
-
+  
 }
 
+void configureSniffer(){
+  digitalWrite(SETCONFIGMODEPIN,HIGH);
+  digitalWrite(SETCONFIGMODEPIN,LOW);
+  //delayMicroseconds(20000);
+  DynamicJsonDocument doc(capacity);
+  doc["MESHTIME"] = mesh.getNodeTime();
+  Serial.print("#");
+  serializeJson(doc, Serial);
+  Serial.print("$");
+  doc.clear();
+}
 
 void serialListener() {
   
@@ -60,6 +69,7 @@ void serialListener() {
         isRecieving = false;
         toSend = incoming;
         hasToSend = true;
+        digitalWrite(LED_BUILTIN, LOW);
       }
       else {
         incoming += a;
@@ -71,16 +81,11 @@ void serialListener() {
 void sendMessage() {
   if(hasToSend){
     mesh.sendBroadcast("Message From Sniffer:"+toSend);
-    //mesh.sendBroadcast("Sent!");
-    //Serial.println("tosend: "+toSend);
     toSend = "";
     hasToSend = false;
+    digitalWrite(LED_BUILTIN, HIGH);
   }
- 
-  
-  
-  
-  //taskSendMessage.setInterval( random( TASK_SECOND * 1, TASK_SECOND * 5 ));
+  //taskSendMessage.setInterval( random( TASK_SECOND * 1, TASK_SECOND * 2 ));
 }
 
 // Needed for painless library
@@ -97,32 +102,23 @@ void changedConnectionCallback() {
 }
 
 void nodeTimeAdjustedCallback(int32_t offset) {
-    //Serial.printf("Adjusted time %u. Offset = %d\n", mesh.getNodeTime(),offset);
+  configureSniffer();
 }
+
+
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(CLEARTORECIEVEPIN,OUTPUT);
-  //pinMode(SETCONFIGMODEPIN,OUTPUT);
+  pinMode(SETCONFIGMODEPIN,OUTPUT);
+
   digitalWrite(CLEARTORECIEVEPIN,HIGH);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(500);
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(500);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(500);
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(500);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(500);
+  digitalWrite(SETCONFIGMODEPIN,HIGH);
   digitalWrite(LED_BUILTIN, HIGH);
   
   Serial.begin(115200);
-  
-
   //mesh.setDebugMsgTypes( ERROR | MESH_STATUS | CONNECTION | SYNC | COMMUNICATION | GENERAL | MSG_TYPES | REMOTE ); // all types on
   mesh.setDebugMsgTypes( ERROR | MESH_STATUS | CONNECTION | SYNC | COMMUNICATION | MSG_TYPES | REMOTE ); // all types on
-  //mesh.setDebugMsgTypes( ERROR | STARTUP );  // set before init() so that you can see startup messages
   mesh.init( MESH_PREFIX, MESH_PASSWORD, &userScheduler, MESH_PORT );
   mesh.onReceive(&receivedCallback);
   mesh.onNewConnection(&newConnectionCallback);
@@ -130,20 +126,11 @@ void setup() {
   mesh.onNodeTimeAdjusted(&nodeTimeAdjustedCallback);
   userScheduler.addTask( taskSendMessage );
   taskSendMessage.enable();
-
   userScheduler.addTask( taskSerialListen );
   taskSerialListen.enable();
 }
 
 void loop() {
-
   // it will run the user scheduler as well
-  if(hasToSend){
-    digitalWrite(LED_BUILTIN, LOW);   // turn the LED on (HIGH is the voltage level)                
-    }
-  else{
-    digitalWrite(LED_BUILTIN, HIGH);
-    }
-  
     mesh.update();
 }
