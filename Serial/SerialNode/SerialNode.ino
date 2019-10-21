@@ -7,6 +7,7 @@
 //
 //************************************************************
 #include "painlessMesh.h"
+#include <ArduinoJson.h>
 
 #define   MESH_PREFIX     "whateverYouLike"
 #define   MESH_PASSWORD   "somethingSneaky"
@@ -69,7 +70,7 @@ void serialListener() {
         isRecieving = false;
         toSend = incoming;
         hasToSend = true;
-        digitalWrite(LED_BUILTIN, LOW);
+       
       }
       else {
         incoming += a;
@@ -80,10 +81,13 @@ void serialListener() {
 }
 void sendMessage() {
   if(hasToSend){
-    mesh.sendBroadcast("Message From Sniffer:"+toSend);
+
+    mesh.sendBroadcast("{\"t\":"
+    +String(mesh.getNodeTime())+",\"m\":"+toSend+"}");
+    //mesh.sendBroadcast(toSend);   
     toSend = "";
     hasToSend = false;
-    digitalWrite(LED_BUILTIN, HIGH);
+    
   }
   //taskSendMessage.setInterval( random( TASK_SECOND * 1, TASK_SECOND * 2 ));
 }
@@ -132,5 +136,12 @@ void setup() {
 
 void loop() {
   // it will run the user scheduler as well
+
+    if(hasToSend){
+       digitalWrite(LED_BUILTIN, LOW);
+    }
+    else{
+       digitalWrite(LED_BUILTIN, HIGH);
+    }
     mesh.update();
 }
