@@ -12,8 +12,10 @@
 #define   MESH_PREFIX     "whateverYouLike"
 #define   MESH_PASSWORD   "somethingSneaky"
 #define   MESH_PORT       5555
-#define   CLEARTORECIEVEPIN D8
-#define   SETCONFIGMODEPIN D2
+#define   CLEARTORECIEVEPIN D2 //WEEMOSD1R1
+#define   SETCONFIGMODEPIN D8
+//#define CLEARTORECIEVEPIN D0  //D1_MINI
+//#define SETCONFIGMODEPIN D4
 
 Scheduler userScheduler; // to control your personal task
 painlessMesh  mesh;
@@ -22,7 +24,7 @@ boolean hasToSend = false;
 String incoming = "";
 String toSend = "";
 int incomingByte = 0;    // for incoming serial data
-const size_t capacity = JSON_OBJECT_SIZE(1);
+const size_t capacity = JSON_OBJECT_SIZE(2);
 // User stub
 void sendMessage() ; // Prototype so PlatformIO doesn't complain
 void serialListener();
@@ -32,26 +34,42 @@ void tryReceiving();
 Task taskSendMessage( TASK_SECOND * 1 , TASK_FOREVER, &sendMessage );
 Task taskSerialListen(TASK_SECOND * 1 , TASK_FOREVER, &tryReceiving );
 
-void tryReceiving(){
+void recieveFromSniffer(){
   digitalWrite(CLEARTORECIEVEPIN,HIGH);
   digitalWrite(CLEARTORECIEVEPIN,LOW);
   delayMicroseconds(20000);
   serialListener();
-  
 }
 
 void configureSniffer(){
   digitalWrite(SETCONFIGMODEPIN,HIGH);
   digitalWrite(SETCONFIGMODEPIN,LOW);
-  //delayMicroseconds(20000);
+  //
   DynamicJsonDocument doc(capacity);
   doc["MESHTIME"] = mesh.getNodeTime();
+  doc["CHANNEL"] = 1;
   Serial.print("#");
   serializeJson(doc, Serial);
-  Serial.print("$");
+  Serial.println("$");
   doc.clear();
 }
 
+void tryReceiving(){
+  recieveFromSniffer();
+  
+} 
+
+
+void toggleLED(){
+  if(digitalRead(LED_BUILTIN)==LOW){
+    digitalWrite(LED_BUILTIN, HIGH);
+
+  }
+  else{
+    digitalWrite(LED_BUILTIN,LOW);
+  }
+
+}
 void serialListener() {
   
   while ((Serial.available() > 0)&&!hasToSend) {
@@ -60,6 +78,7 @@ void serialListener() {
     incomingByte = Serial.read();
     // say what you got:s
     char a = (char) incomingByte;
+    toggleLED();
    // Serial.print(a);
     if (a == '#') { //message start
       isRecieving = true;
